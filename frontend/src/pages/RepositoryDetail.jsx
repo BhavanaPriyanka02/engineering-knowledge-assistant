@@ -58,6 +58,10 @@ function RepositoryDetail() {
         </button>
         <h1>{repository?.repo_name || "Repository"}</h1>
         <p>{repository?.repo_url}</p>
+        <p>
+          <strong>Type:</strong>{" "}
+          {repository?.repository_type === "coding" ? "Coding Repository" : "Project Repository"}
+        </p>
       </header>
 
       <section style={{ display: "grid", gap: 20, gridTemplateColumns: "minmax(240px, 320px) minmax(0, 1fr)" }}>

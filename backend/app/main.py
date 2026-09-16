@@ -6,6 +6,15 @@ from app.api.routes import auth_router, documents_router, repositories_router
 from app.db.database import Base, engine
 from app.models import Document, Repository, RepositoryFile, User
 
+
+def ensure_repository_columns() -> None:
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "ALTER TABLE repositories ADD COLUMN IF NOT EXISTS repository_type VARCHAR(32) NOT NULL DEFAULT 'project'"
+            )
+        )
+
 app = FastAPI(
     title="Personal Engineering Knowledge Assistant API"
 )
@@ -22,6 +31,7 @@ app.add_middleware(
 )
 
 Base.metadata.create_all(bind=engine)
+ensure_repository_columns()
 app.include_router(auth_router)
 app.include_router(documents_router)
 app.include_router(repositories_router)

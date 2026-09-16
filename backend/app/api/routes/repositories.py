@@ -36,6 +36,13 @@ def create_repository(
             detail=str(error),
         ) from error
 
+    repository_type = repository_create.repository_type.lower()
+    if repository_type not in {"project", "coding"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Repository type must be 'project' or 'coding'.",
+        )
+
     existing_repository = (
         db.query(Repository)
         .filter(Repository.user_id == current_user.id, Repository.repo_url == repo_url)
@@ -60,6 +67,7 @@ def create_repository(
         repo_url=repo_url,
         repo_name=repo_name,
         local_path=str(clone_dir),
+        repository_type=repository_type,
     )
 
     try:

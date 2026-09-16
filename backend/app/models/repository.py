@@ -14,6 +14,7 @@ class Repository(Base):
     repo_url = Column(String(512), nullable=False)
     repo_name = Column(String(256), nullable=False)
     local_path = Column(String(512), nullable=False)
+    repository_type = Column(String(32), nullable=False, default="project", server_default="project")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="repositories")

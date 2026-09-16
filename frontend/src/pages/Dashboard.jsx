@@ -8,6 +8,7 @@ function Dashboard() {
   const [repositories, setRepositories] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [repoUrl, setRepoUrl] = useState("");
+  const [repositoryType, setRepositoryType] = useState("project");
   const [error, setError] = useState("");
   const [documentMessage, setDocumentMessage] = useState("");
   const [repositoryMessage, setRepositoryMessage] = useState("");
@@ -95,8 +96,12 @@ function Dashboard() {
     setIsAddingRepository(true);
 
     try {
-      await api.post("/repositories", { repo_url: repoUrl.trim() });
+      await api.post("/repositories", {
+        repo_url: repoUrl.trim(),
+        repository_type: repositoryType,
+      });
       setRepoUrl("");
+      setRepositoryType("project");
       setRepositoryMessage("Repository added successfully.");
       const response = await api.get("/repositories");
       setRepositories(response.data);
@@ -163,14 +168,39 @@ function Dashboard() {
 
           <section className="upload-panel">
             <h2>GitHub Repository</h2>
-            <form onSubmit={handleAddRepository} className="upload-controls">
-              <input
-                type="url"
-                value={repoUrl}
-                onChange={(event) => setRepoUrl(event.target.value)}
-                placeholder="https://github.com/username/repository"
-                style={{ flex: 1 }}
-              />
+            <form onSubmit={handleAddRepository}>
+              <div style={{ marginBottom: 10 }}>
+                <input
+                  type="url"
+                  value={repoUrl}
+                  onChange={(event) => setRepoUrl(event.target.value)}
+                  placeholder="https://github.com/username/repository"
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ display: "block", marginBottom: 6 }}>Repository Type:</label>
+                <label style={{ marginRight: 12 }}>
+                  <input
+                    type="radio"
+                    name="repositoryType"
+                    value="project"
+                    checked={repositoryType === "project"}
+                    onChange={(event) => setRepositoryType(event.target.value)}
+                  />
+                  Project
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="repositoryType"
+                    value="coding"
+                    checked={repositoryType === "coding"}
+                    onChange={(event) => setRepositoryType(event.target.value)}
+                  />
+                  Coding Solutions
+                </label>
+              </div>
               <button type="submit" disabled={isAddingRepository}>
                 {isAddingRepository ? "Adding..." : "Add Repository"}
               </button>
@@ -191,6 +221,7 @@ function Dashboard() {
                   <li className="document-item" key={repository.id}>
                     <div>
                       <strong>{repository.repo_name}</strong>
+                      <small>Type: {repository.repository_type === "coding" ? "Coding Solutions" : "Project"}</small>
                       <small>{repository.repo_url}</small>
                       <small>{new Date(repository.created_at).toLocaleString()}</small>
                     </div>

@@ -1,10 +1,12 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
 
 class RepositoryCreate(BaseModel):
     repo_url: str
+    repository_type: Literal["project", "coding"] = "project"
 
 
 class RepositoryRead(BaseModel):
@@ -13,6 +15,7 @@ class RepositoryRead(BaseModel):
     id: int
     repo_url: str
     repo_name: str
+    repository_type: str
     created_at: datetime
 
 
