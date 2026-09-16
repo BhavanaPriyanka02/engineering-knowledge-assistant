@@ -5,26 +5,36 @@ import api from "../services/api";
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [documents, setDocuments] = useState([]);
+  const [repositories, setRepositories] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [repoUrl, setRepoUrl] = useState("");
   const [error, setError] = useState("");
   const [documentMessage, setDocumentMessage] = useState("");
+  const [repositoryMessage, setRepositoryMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isAddingRepository, setIsAddingRepository] = useState(false);
   const navigate = useNavigate();
 
+  const loadDashboardData = async () => {
+    try {
+      const [userResponse, documentsResponse, repositoriesResponse] = await Promise.all([
+        api.get("/auth/me"),
+        api.get("/documents"),
+        api.get("/repositories"),
+      ]);
+
+      setUser(userResponse.data);
+      setDocuments(documentsResponse.data);
+      setRepositories(repositoriesResponse.data);
+    } catch (loadError) {
+      setError("Unable to load dashboard. Please login again.");
+      localStorage.removeItem("token");
+      navigate("/", { replace: true });
+    }
+  };
+
   useEffect(() => {
-    api.get("/auth/me")
-      .then((response) => {
-        setUser(response.data);
-        return api.get("/documents");
-      })
-      .then((response) => {
-        setDocuments(response.data);
-      })
-      .catch(() => {
-        setError("Unable to load dashboard. Please login again.");
-        localStorage.removeItem("token");
-        navigate("/", { replace: true });
-      });
+    loadDashboardData();
   }, [navigate]);
 
   const handleLogout = () => {
@@ -73,6 +83,47 @@ function Dashboard() {
     }
   };
 
+  const handleAddRepository = async (event) => {
+    event.preventDefault();
+    setRepositoryMessage("");
+
+    if (!repoUrl.trim()) {
+      setRepositoryMessage("Enter a GitHub repository URL.");
+      return;
+    }
+
+    setIsAddingRepository(true);
+
+    try {
+      await api.post("/repositories", { repo_url: repoUrl.trim() });
+      setRepoUrl("");
+      setRepositoryMessage("Repository added successfully.");
+      const response = await api.get("/repositories");
+      setRepositories(response.data);
+    } catch (repositoryError) {
+      setRepositoryMessage(
+        repositoryError.response?.data?.detail || "The repository could not be added."
+      );
+    } finally {
+      setIsAddingRepository(false);
+    }
+  };
+
+  const handleDeleteRepository = async (repositoryId) => {
+    setRepositoryMessage("");
+
+    try {
+      await api.delete(`/repositories/${repositoryId}`);
+      setRepositories((currentRepositories) =>
+        currentRepositories.filter((repository) => repository.id !== repositoryId)
+      );
+    } catch (repositoryError) {
+      setRepositoryMessage(
+        repositoryError.response?.data?.detail || "The repository could not be deleted."
+      );
+    }
+  };
+
   if (error) {
     return (
       <div style={{ maxWidth: 400, margin: "auto", padding: 24 }}>
@@ -93,6 +144,7 @@ function Dashboard() {
       {user ? (
         <>
           <p className="welcome">Welcome, {user.name}. Add a PDF to your library.</p>
+
           <section className="upload-panel">
             <label htmlFor="pdf-picker">PDF document</label>
             <div className="upload-controls">
@@ -108,6 +160,52 @@ function Dashboard() {
             </div>
             {documentMessage && <p className="document-message">{documentMessage}</p>}
           </section>
+
+          <section className="upload-panel">
+            <h2>GitHub Repository</h2>
+            <form onSubmit={handleAddRepository} className="upload-controls">
+              <input
+                type="url"
+                value={repoUrl}
+                onChange={(event) => setRepoUrl(event.target.value)}
+                placeholder="https://github.com/username/repository"
+                style={{ flex: 1 }}
+              />
+              <button type="submit" disabled={isAddingRepository}>
+                {isAddingRepository ? "Adding..." : "Add Repository"}
+              </button>
+            </form>
+            {repositoryMessage && <p className="document-message">{repositoryMessage}</p>}
+          </section>
+
+          <section className="documents-section">
+            <div className="section-heading">
+              <h2>Your repositories</h2>
+              <span>{repositories.length}</span>
+            </div>
+            {repositories.length === 0 ? (
+              <p className="empty-state">No repositories added yet.</p>
+            ) : (
+              <ul className="document-list">
+                {repositories.map((repository) => (
+                  <li className="document-item" key={repository.id}>
+                    <div>
+                      <strong>{repository.repo_name}</strong>
+                      <small>{repository.repo_url}</small>
+                      <small>{new Date(repository.created_at).toLocaleString()}</small>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => navigate(`/repositories/${repository.id}`)}>View Files</button>
+                      <button className="delete-button" onClick={() => handleDeleteRepository(repository.id)}>
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           <section className="documents-section">
             <div className="section-heading">
               <h2>Your documents</h2>

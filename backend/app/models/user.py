@@ -16,3 +16,4 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     documents = relationship("Document", back_populates="user")
+    repositories = relationship("Repository", back_populates="user")
