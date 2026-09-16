@@ -1,24 +1,21 @@
-import { useEffect, useState } from "react";
-import api from "./services/api";
+import { Routes, Route, Navigate } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    api.get("/")
-      .then((res) => {
-        setMessage(res.data.message);
-      })
-      .catch(() => {
-        setMessage("Backend Connection Failed");
-      });
-  }, []);
+  const isLoggedIn = Boolean(localStorage.getItem("token"));
 
   return (
-    <div>
-      <h1>Personal Engineering Knowledge Assistant</h1>
-      <p>{message}</p>
-    </div>
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route
+        path="/dashboard"
+        element={isLoggedIn ? <Dashboard /> : <Navigate to="/" replace />}
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

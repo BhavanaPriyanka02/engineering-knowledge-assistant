@@ -2,7 +2,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from sqlalchemy import text
 
-from app.db.database import engine
+from app.api.routes import auth_router, documents_router
+from app.db.database import Base, engine
+from app.models import Document, User
 
 app = FastAPI(
     title="Personal Engineering Knowledge Assistant API"
@@ -18,6 +20,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+Base.metadata.create_all(bind=engine)
+app.include_router(auth_router)
+app.include_router(documents_router)
 
 @app.get("/")
 def root():
