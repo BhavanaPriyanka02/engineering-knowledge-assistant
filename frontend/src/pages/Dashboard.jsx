@@ -12,8 +12,16 @@ function Dashboard() {
   const [error, setError] = useState("");
   const [documentMessage, setDocumentMessage] = useState("");
   const [repositoryMessage, setRepositoryMessage] = useState("");
+  const [searchQuestion, setSearchQuestion] = useState("");
+  const [topK, setTopK] = useState("5");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isAddingRepository, setIsAddingRepository] = useState(false);
+  const [processingDocumentId, setProcessingDocumentId] = useState(null);
+  const [processingRepositoryId, setProcessingRepositoryId] = useState(null);
+  const [processingStatus, setProcessingStatus] = useState({});
   const navigate = useNavigate();
 
   const loadDashboardData = async () => {
@@ -129,6 +137,72 @@ function Dashboard() {
     }
   };
 
+  const handleProcessDocument = async (documentId) => {
+    setProcessingDocumentId(documentId);
+    setProcessingStatus((current) => ({ ...current, [documentId]: "Processing..." }));
+
+    try {
+      const response = await api.post(`/knowledge/process/documents/${documentId}`);
+      setProcessingStatus((current) => ({
+        ...current,
+        [documentId]: `Processed: ${response.data.chunks_created} chunks`,
+      }));
+    } catch (processError) {
+      setProcessingStatus((current) => ({
+        ...current,
+        [documentId]: "Processing failed.",
+      }));
+    } finally {
+      setProcessingDocumentId(null);
+    }
+  };
+
+  const handleProcessRepository = async (repositoryId) => {
+    setProcessingRepositoryId(repositoryId);
+    setProcessingStatus((current) => ({ ...current, [repositoryId]: "Processing..." }));
+
+    try {
+      const response = await api.post(`/knowledge/process/repositories/${repositoryId}`);
+      setProcessingStatus((current) => ({
+        ...current,
+        [repositoryId]: `Processed: ${response.data.chunks_created} chunks`,
+      }));
+    } catch (processError) {
+      setProcessingStatus((current) => ({
+        ...current,
+        [repositoryId]: "Processing failed.",
+      }));
+    } finally {
+      setProcessingRepositoryId(null);
+    }
+  };
+
+  const handleKnowledgeSearch = async (event) => {
+    event.preventDefault();
+
+    if (!searchQuestion.trim()) {
+      setSearchError("Enter a question to search your knowledge base.");
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError("");
+
+    try {
+      const sanitizedTopK = Number(topK) || 5;
+      const response = await api.post("/knowledge/search", {
+        query: searchQuestion.trim(),
+        top_k: Math.max(1, sanitizedTopK),
+      });
+      setSearchResults(response.data?.results || []);
+    } catch (searchError) {
+      setSearchError(searchError.response?.data?.detail || "Knowledge search failed.");
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   if (error) {
     return (
       <div style={{ maxWidth: 400, margin: "auto", padding: 24 }}>
@@ -149,6 +223,60 @@ function Dashboard() {
       {user ? (
         <>
           <p className="welcome">Welcome, {user.name}. Add a PDF to your library.</p>
+
+          <section className="upload-panel search-panel">
+            <h2>Search Knowledge</h2>
+            <form onSubmit={handleKnowledgeSearch} className="knowledge-search-form">
+              <div className="search-input-row">
+                <input
+                  type="text"
+                  value={searchQuestion}
+                  onChange={(event) => setSearchQuestion(event.target.value)}
+                  placeholder="Ask a question about your saved knowledge"
+                />
+                <div className="top-k-control">
+                  <label htmlFor="knowledge-top-k">Top K</label>
+                  <input
+                    id="knowledge-top-k"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={topK}
+                    onChange={(event) => setTopK(event.target.value)}
+                  />
+                </div>
+              </div>
+              <button type="submit" disabled={isSearching}>
+                {isSearching ? "Searching..." : "Search"}
+              </button>
+            </form>
+            {searchError && <p className="document-message search-error">{searchError}</p>}
+
+            <div className="search-results">
+              {searchResults.length === 0 && !isSearching && !searchError ? (
+                <p className="empty-state">No results yet. Search your knowledge base to test retrieval.</p>
+              ) : (
+                searchResults.map((result, index) => (
+                  <article className="result-card" key={`${result.source_name}-${result.chunk_index}-${index}`}>
+                    <div className="result-meta-row">
+                      <span className="result-badge">Result {index + 1}</span>
+                      <span className="result-score">Similarity: {Number(result.similarity_score ?? 0).toFixed(4)}</span>
+                    </div>
+                    <dl>
+                      <div><dt>Source name</dt><dd>{result.source_name || "Unnamed source"}</dd></div>
+                      <div><dt>Source path</dt><dd>{result.source_path || "No path available"}</dd></div>
+                      <div><dt>Chunk index</dt><dd>{result.chunk_index}</dd></div>
+                      <div><dt>Similarity score</dt><dd>{Number(result.similarity_score ?? 0).toFixed(4)}</dd></div>
+                    </dl>
+                    <div className="result-content-block">
+                      <h3>Chunk content</h3>
+                      <p>{result.content}</p>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
 
           <section className="upload-panel">
             <label htmlFor="pdf-picker">PDF document</label>
@@ -225,12 +353,21 @@ function Dashboard() {
                       <small>{repository.repo_url}</small>
                       <small>{new Date(repository.created_at).toLocaleString()}</small>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button onClick={() => navigate(`/repositories/${repository.id}`)}>View Files</button>
+                      <button
+                        onClick={() => handleProcessRepository(repository.id)}
+                        disabled={processingRepositoryId === repository.id}
+                      >
+                        {processingRepositoryId === repository.id ? "Processing..." : "Process for AI"}
+                      </button>
                       <button className="delete-button" onClick={() => handleDeleteRepository(repository.id)}>
                         Delete
                       </button>
                     </div>
+                    {processingStatus[repository.id] && (
+                      <small>{processingStatus[repository.id]}</small>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -252,12 +389,23 @@ function Dashboard() {
                       <strong>{document.filename}</strong>
                       <small>{new Date(document.created_at).toLocaleString()}</small>
                     </div>
-                    <button
-                      className="delete-button"
-                      onClick={() => handleDelete(document.id)}
-                    >
-                      Delete
-                    </button>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => handleProcessDocument(document.id)}
+                        disabled={processingDocumentId === document.id}
+                      >
+                        {processingDocumentId === document.id ? "Processing..." : "Process for AI"}
+                      </button>
+                      <button
+                        className="delete-button"
+                        onClick={() => handleDelete(document.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    {processingStatus[document.id] && (
+                      <small>{processingStatus[document.id]}</small>
+                    )}
                   </li>
                 ))}
               </ul>

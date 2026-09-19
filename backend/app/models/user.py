@@ -17,3 +17,4 @@ class User(Base):
 
     documents = relationship("Document", back_populates="user")
     repositories = relationship("Repository", back_populates="user")
+    knowledge_chunks = relationship("KnowledgeChunk", back_populates="user")

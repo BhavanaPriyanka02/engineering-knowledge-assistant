@@ -18,3 +18,8 @@ class RepositoryFile(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     repository = relationship("Repository", back_populates="repository_files")
+    knowledge_chunks = relationship(
+        "KnowledgeChunk",
+        back_populates="repository_file",
+        foreign_keys="KnowledgeChunk.repository_file_id",
+    )

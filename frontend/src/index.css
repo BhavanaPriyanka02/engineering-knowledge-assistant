@@ -43,6 +43,126 @@ button:disabled { cursor: wait; opacity: 0.65; }
 	gap: 20px;
 }
 
+.search-panel {
+	margin: 0 0 28px;
+}
+
+.knowledge-search-form {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	margin-top: 18px;
+}
+
+.search-input-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 120px;
+	gap: 12px;
+}
+
+.knowledge-search-form input[type="text"],
+.knowledge-search-form input[type="number"] {
+	width: 100%;
+	padding: 12px 14px;
+	border: 1px solid #c8d5cd;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.9);
+}
+
+.top-k-control {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #355449;
+}
+
+.search-results {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin-top: 20px;
+}
+
+.result-card {
+	padding: 18px;
+	border: 1px solid #c8d5cd;
+	border-radius: 10px;
+	background: rgba(255, 255, 255, 0.75);
+}
+
+.result-meta-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.result-badge {
+	display: inline-block;
+	padding: 6px 10px;
+	border-radius: 999px;
+	background: #dfeee5;
+	color: #176b5b;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.result-score {
+	font-size: 13px;
+	font-weight: 700;
+	color: #355449;
+}
+
+.result-card dl {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px 16px;
+	margin: 0;
+}
+
+.result-card dt {
+	margin: 0 0 4px;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: #718079;
+}
+
+.result-card dd {
+	margin: 0;
+	color: #17221f;
+	word-break: break-word;
+}
+
+.result-content-block {
+	margin-top: 18px;
+	padding-top: 12px;
+	border-top: 1px solid #dfeae2;
+}
+
+.result-content-block h3 {
+	margin: 0 0 10px;
+	font-size: 14px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #355449;
+}
+
+.result-content-block p {
+	margin: 0;
+	white-space: pre-wrap;
+	line-height: 1.6;
+	color: #24342c;
+}
+
+.search-error {
+	color: #9d3d32;
+}
+
 .eyebrow {
 	margin: 0 0 8px;
 	color: #176b5b;
@@ -75,4 +195,6 @@ input[type="file"] { min-width: 0; max-width: 100%; }
 	h1 { font-size: 34px; }
 	.upload-controls { align-items: stretch; flex-direction: column; }
 	.document-item { align-items: flex-start; }
+	.search-input-row { grid-template-columns: 1fr; }
+	.result-card dl { grid-template-columns: 1fr; }
 }

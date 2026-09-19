@@ -2,9 +2,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from sqlalchemy import text
 
-from app.api.routes import auth_router, documents_router, repositories_router
+from app.api.routes import auth_router, documents_router, knowledge_router, repositories_router
 from app.db.database import Base, engine
-from app.models import Document, Repository, RepositoryFile, User
+from app.models import Document, KnowledgeChunk, Repository, RepositoryFile, User
+
+
+def ensure_pgvector_extension() -> None:
+    with engine.begin() as connection:
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
 
 
 def ensure_repository_columns() -> None:
@@ -12,6 +17,20 @@ def ensure_repository_columns() -> None:
         connection.execute(
             text(
                 "ALTER TABLE repositories ADD COLUMN IF NOT EXISTS repository_type VARCHAR(32) NOT NULL DEFAULT 'project'"
+            )
+        )
+
+
+def ensure_knowledge_chunk_columns() -> None:
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS repository_id INTEGER"
+            )
+        )
+        connection.execute(
+            text(
+                "ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS repository_file_id INTEGER"
             )
         )
 
@@ -30,10 +49,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+ensure_pgvector_extension()
 Base.metadata.create_all(bind=engine)
 ensure_repository_columns()
+ensure_knowledge_chunk_columns()
 app.include_router(auth_router)
 app.include_router(documents_router)
+app.include_router(knowledge_router)
 app.include_router(repositories_router)
 
 @app.get("/")

@@ -23,3 +23,8 @@ class Repository(Base):
         back_populates="repository",
         cascade="all, delete-orphan",
     )
+    knowledge_chunks = relationship(
+        "KnowledgeChunk",
+        back_populates="repository",
+        foreign_keys="KnowledgeChunk.repository_id",
+    )
